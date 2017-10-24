@@ -3,34 +3,11 @@ import json
 import requests
 import sys, getopt
 import logging
-import pytz
-from dateutil.parser import parse
-from datetime import timedelta, datetime
+import pagination 
 
 logging.basicConfig()
 logger = logging.getLogger('AlertManager')
 logger.setLevel(logging.INFO)
-
-def pages(url, session, params=None):
-    response = session.get(url, params=params)
-    yield response
-    while True:
-        try:
-            next_url = response.links['next']['url']
-            response = session.get(next_url)
-            yield response
-        except KeyError:
-            break
-
-def entities(url, session, entity_name, params=None):
-    entities = []
-
-    for response in pages(url, session, params=params):
-        json_response = response.json()
-        if entity_name in json_response:
-            entities[0:0] = json_response[entity_name]
-
-    return entities
 
 class NewRelicAlertManager(object):
 
@@ -39,7 +16,6 @@ class NewRelicAlertManager(object):
         self.config = config
         self.pm = policy_manager
         self.sm = server_manager
-        self.initialise()
 
     def initialise(self):
         for alert_policy in self.config:
@@ -51,7 +27,7 @@ class NewRelicAlertManager(object):
             tags = []
             for tag in policy.tags:
                 tags.append("Deployment:" + tag)
-            params= {"filter[labels]": ";".join(tags)}
+            params = {"filter[labels]": ";".join(tags)}
             servers = self.sm.get_servers(params=params)
             for server in servers:
                 policy.register_server(server)
@@ -150,7 +126,9 @@ class PoliciesManager(object):
         self.alert_policies = []
 
     def add_alert_policy(self, policy):
-            self.alert_policies.append(Policy(self.session, policy))
+            new_policy = Policy(self.session, policy)
+            new_policy.initialise()
+            self.alert_policies.append(new_policy)
 
     def policies_by_tags(self, tags):
         return [ policy for policy in self.alert_policies if not tags.isdisjoint(policy.tags) ]
@@ -173,7 +151,6 @@ class Policy(object):
         self.id = ""
         self.cm = ConditionManager(session)
         servers = []
-        self.initialise()
 
     def initialise(self):
         params = {"filter[name]": self.name}
@@ -195,79 +172,3 @@ class Policy(object):
             "{ id: " + str(self.id) +" },"
             "{ tags: " + str(self.tags) +" }"
             "{ conditions: " + str(self.cm) + "}" )
-
-class ServersManager(object):
-
-    servers_url = "https://api.newrelic.com/v2/servers.json"
-    server_delete_url = "https://api.newrelic.com/v2/servers/{server_id}.json"
-
-    delete_policy = ""
-    def __init__(self, session):
-        self.session = session
-        self.delete_delay = timedelta(hours=24)
-
-    def get_servers(self, params=None):
-        return entities(self.servers_url, self.session, "servers", params=params)
-
-    def cleanup_not_reporting_servers(self):
-        params ={"filter[reported]": "false"}
-        all_servers = self.get_servers(params)
-        now = datetime.utcnow().replace(tzinfo=pytz.utc)
-        not_reporting_servers = [ server for server in all_servers 
-            if not server["reporting"] 
-            if now - parse(server["last_reported_at"]) > self.delete_delay]
-        
-        for server in not_reporting_servers:
-            logger.info("Permanently deleting server: {}".format(server["name"]))
-            response = self.session.delete(self.server_delete_url.format(
-                server_id=server["id"], params=params))
-
-            if response.status_code == 200:
-                logger.info("Server successfully deleted")
-            else:
-                logger.error(response.json())
-                logger.info("Error while deleting the server")
-
-
-
-def main(argv):
-
-    key = ""
-    debug = False
-
-    usage_string = "newrelic_alerting -k <newrelic_key> [-d]"
-    try:
-            opts, args = getopt.getopt(argv,"hk:", ["key="])
-    except getopt.GetoptError:
-            logger.error(usage_string)
-            sys.exit(2)
-    for opt, arg in opts:
-            if opt == '-h':
-                logger.info(usage_string)
-                sys.exit()
-            elif opt in ("-k", "--key"):
-                    key = arg
-            elif opt in ("-d"):
-                    debug = True
-
-            if debug:
-                logger.setLevel(logging.DEBUG)
-
-    with open("./alert_config.yml") as alert_config_file:
-        config = yaml.load(alert_config_file)
-
-    session = requests.Session()
-    if key == "":
-        logger.critical("New Relic API key cannot be empty")
-        sys.exit(1)
-    session.headers.update({'X-Api-Key': key})
-
-    sm = ServersManager(session)
-    sm.cleanup_not_reporting_servers()
-
-    pm = PoliciesManager(session) 
-    alert_manager = NewRelicAlertManager(session, config["alert_policies"], pm, sm)
-    alert_manager.assign_servers_to_policies()
-
-if __name__ == '__main__':
-    main(sys.argv[1:])
