@@ -64,6 +64,10 @@ The only supported server label is currently `Deployment`. Therefore ie., accord
 the only servers associated with the `Alert Policy LIVE` would be those labelled in newrelic with one or both of the 
 `Deployment:live-web` and `Deployment:live-backend` server labels.
 
+##Running as a web app
+
+
+
 ##Running on Cloudfoundry
 
 When running on Cloudfoundry you will need a properly formatted application manifest. One example manifest can
@@ -98,6 +102,11 @@ In this case the key is expected to be found under the `VCAP_SERVICES["newrelic"
 dictionary key.
 
 ##Running as a script
+
+An alert config file named `alert_config.yml` should be present in the execution directory. An example can be found
+at the root of this project in the `alert_config.example.yml` file.
+
+You can specify an alternative configuration file path via the `-c` flag
 
 You can run the utility by executing the run script:
 
