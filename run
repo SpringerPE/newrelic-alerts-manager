@@ -2,9 +2,5 @@
 
 import newrelic_alerting.run as newrelic_alerting
 
-
-def run():
-	arg
-
 if __name__ == "__main__":
 	newrelic_alerting.main()

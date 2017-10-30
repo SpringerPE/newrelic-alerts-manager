@@ -1,6 +1,3 @@
-import logging
-import requests
-
 from . import pagination
 from . import helper
 

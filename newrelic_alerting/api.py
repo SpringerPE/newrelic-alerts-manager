@@ -1,4 +1,6 @@
 from flask import Blueprint, jsonify
+from flask import current_app as app
+
 import traceback
 from . import run
 from . import helper
@@ -7,10 +9,10 @@ logger = helper.getLogger(__name__)
 
 api = Blueprint("api", __name__)
 
-@api.route("/synchronise")
+@api.route("/synchronise", methods = ['POST'])
 def synchronise():
     try:
-        run.main_app()
+        run.run_synch(app.config)
     except Exception as re:
         logger.error(re)
         logger.error(repr(traceback.format_stack()))
