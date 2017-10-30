@@ -1,4 +1,5 @@
 import requests
+import json
 from . import helper
 from .exceptions import UnexpectedStatusCode
 
@@ -44,19 +45,24 @@ def pages(url, session, params=None):
         try:
             next_url = response.links['next']['url']
             response = session.get(next_url)
+            handle_response_status(response, 200)
             yield response
         except KeyError:
             break
-        except requests.exceptions.RequestException as e:
-            logger.error(str(e))
-            raise(e)
+        except (requests.exceptions.RequestException, UnexpectedStatusCode) as re:
+            logger.error(str(re))
+            raise StopIteration(re)
 
 def entities(url, session, entity_name, params=None):
     entities = []
     for response in pages(url, session, params=params):
-        json_response = response.json()
-        if entity_name in json_response:
-            entities[0:0] = json_response[entity_name]
+        try:
+            json_response = response.json()
+            if entity_name in json_response:
+                entities[0:0] = json_response[entity_name]
+        except json.decoder.JSONDecodeError as je:
+            logger.error(str(je))
+            break
     return entities
 
 
