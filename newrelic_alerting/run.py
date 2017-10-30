@@ -53,7 +53,9 @@ def main_app():
 
     run_synch(key, alert_config, debug)
 
-def main(argv):
+def main():
+
+    argv = sys.argv[1:]
 
     key = ""
     debug = False
