@@ -1,0 +1,10 @@
+---
+alert_policies:
+    - name: "Alert Policy LIVE"
+      tags:
+      - live-web
+      - live-backend
+    - name: "Alert Policy DEV"
+      tags:
+      - dev-web
+      - dev-database
