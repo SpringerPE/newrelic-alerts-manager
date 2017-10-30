@@ -1,9 +1,9 @@
 import requests
 import sys
-
 from os import environ
 
-from flask import Flask, render_template
+from jinja2 import Environment, PackageLoader
+from flask import Flask, url_for
 
 from newrelic_alerting.api import api
 from newrelic_alerting.config import AppConfig
@@ -14,9 +14,13 @@ from .policy import PolicyDataManager, PoliciesManager
 from .alert_manager import NewRelicAlertManager
 from . import helper
 
-
-
 logger = helper.getLogger(__name__)
+
+
+#loads the templates
+env = Environment(loader=PackageLoader('newrelic_alerting', 'templates'))
+index_tmpl = env.get_template('index.html.j2')
+
 
 def run_synch(config):
 
@@ -52,7 +56,8 @@ def create_app(config):
 
     @app.route("/")
     def index():
-        return render_template("index.html")
+        index_css_url =  url_for('static', filename='styles/index.css')
+        return index_tmpl.render(index_css_url=index_css_url)
 
     return app
 
