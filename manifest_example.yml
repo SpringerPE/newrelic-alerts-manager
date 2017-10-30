@@ -1,0 +1,16 @@
+applications:
+- name: newrelic-alerts-manager
+  memory: 128M
+  instances: 1
+  env:
+    ALERT_CONFIG: |
+      ---
+      alert_policies:
+          - name: "Alert Policy LIVE"
+            tags:
+            - live-web
+            - live-backend
+          - name: "Alert Policy DEV"
+            tags:
+            - dev-web
+            - dev-database
