@@ -75,7 +75,9 @@ setup(
 
     # install the executable scripts
     entry_points = {
-        'console_scripts': ['newrelic-alerts-synch=newrelic_alerting.run:main']
+        'console_scripts': [
+            'newrelic-alerts-synch=newrelic_alerting.run:main',
+            'newrelic-alerts-app=newrelic_alerting.run:main_app']
     },
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
