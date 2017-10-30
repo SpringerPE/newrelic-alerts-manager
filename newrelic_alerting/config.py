@@ -53,7 +53,7 @@ class AppConfig(BaseConfig):
             services = json.loads(os.getenv('VCAP_SERVICES'))
             self.API_KEY = services["newrelic"][0]["credentials"]["licenseKey"]
         else:
-            self.API_KEY = os.getenv("NEWRELIC_KEY")
+            self.API_KEY = os.getenv("NEWRELIC_API_KEY")
 
         self.ALERT_CONFIG = yaml.load(os.getenv("ALERT_CONFIG"))
         self.MAX_INACTIVITY = os.environ.get('SERVER_MAX_INACTIVITY', 24)
