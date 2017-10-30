@@ -1,4 +1,5 @@
 import yaml
+import json
 import requests
 import logging
 import os
@@ -11,10 +12,7 @@ from . import helper
 
 logger = helper.getLogger(__name__)
 
-def run_synch(key="", debug=False):
-
-    with open("./alert_config.yml") as alert_config_file:
-        config = yaml.load(alert_config_file)
+def run_synch(key="", config={}, debug=False):
 
     session = requests.Session()
     if key == "":
@@ -33,15 +31,27 @@ def run_synch(key="", debug=False):
 
 def main_app():
 
-    if "NEWRELIC_KEY" not in os.environ:
-        logging.error("The variable NEWRELIC_KEY needs to be defined")
-        sys.exit(1)
-    else:
+    if 'VCAP_SERVICES' in os.environ:
+        services = json.loads(os.getenv('VCAP_SERVICES'))
+        key = services["newrelic"][0]["credentials"]["licenseKey"]
+        print("The key is" + key)
+
+    elif "NEWRELIC_KEY" in os.environ:
         key = os.getenv("NEWRELIC_KEY")
+
+    else:
+        logging.error("The variable NEWRELIC_KEY needs to be defined")
+        raise Exception("The variable NEWRELIC_KEY needs to be defined")
+
+    if 'ALERT_CONFIG' in os.environ:
+        alert_config = yaml.load(os.getenv("ALERT_CONFIG"))
+    else:
+        logging.error("The variable ALERT_CONFIG needs to be defined")
+        raise Exception("The variable ALERT_CONFIG needs to be defined")
 
     debug = os.environ.get("ALERT_MANAGER_DEBUG_LOG", False)
 
-    run_synch(key, debug)
+    run_synch(key, alert_config, debug)
 
 def main(argv):
 
@@ -66,5 +76,8 @@ def main(argv):
             if debug:
                 logger.setLevel(logging.DEBUG)
 
-    run_synch(key, debug)
+    with open("./alert_config.yml") as alert_config_file:
+        config = yaml.load(alert_config_file)
+
+    run_synch(key, config, debug)
 
