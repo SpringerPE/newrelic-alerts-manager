@@ -68,7 +68,7 @@ setup(
 
     # Include additional files into the package
     include_package_data=True,
-    package_data={'.': ['templates/*.html']},
+    package_data={},
 
     # additional files need to be installed into
     data_files=[],
