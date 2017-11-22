@@ -25,13 +25,14 @@ def run_synch(config):
     sdm = ServersDataManager(session)
     sm = ServersManager(sdm)
     sm.max_inactivity = config["MAX_INACTIVITY"]
-    sm.cleanup_not_reporting_servers()
 
     pdm = PolicyDataManager(session)
     pm = PoliciesManager(pdm)
     alert_manager = NewRelicAlertManager(session, config["ALERT_CONFIG"]["alert_policies"], pm, sm)
     alert_manager.initialise()
     alert_manager.assign_servers_to_policies()
+
+    sm.cleanup_not_reporting_servers()
 
 def main():
 
